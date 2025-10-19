@@ -5,6 +5,10 @@ import { useCallback, useEffect, useState } from "react";
 import type { InjectedAccountWithMeta } from "@polkadot/extension-inject/types";
 import { enableAndGetAccounts } from "../lib/polkadot";
 
+import { web3Enable, web3Accounts } from "@polkadot/extension-dapp";
+import { ethers } from "ethers";
+
+
 const LS_KEY = "tg:selected-ss58";
 
 export function usePolkadotWallet() {
@@ -93,4 +97,3 @@ export function usePolkadotWallet() {
     disconnect,
   };
 }
-

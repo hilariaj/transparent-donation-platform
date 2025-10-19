@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
+    "@polkadot/api": "^16.4.9",
     "@polkadot/extension-dapp": "^0.62.2",
     "@polkadot/extension-inject": "^0.62.2",
     "@polkadot/util": "^13.5.7",
@@ -48,6 +49,7 @@
     "cmdk": "1.0.4",
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.5.1",
+    "ethers": "^6.15.0",
     "geist": "^1.5.1",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
@@ -67,8 +69,8 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.9",
-    "@types/node": "^22",
-    "@types/react": "^19",
+    "@types/node": "^22.18.11",
+    "@types/react": "^19.2.2",
     "@types/react-dom": "^19",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
