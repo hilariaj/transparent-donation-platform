@@ -7,6 +7,7 @@ import { Separator } from "./ui/separator"
 import { CheckCircle2, ExternalLink, Download } from "lucide-react"
 import type { DonationReceipt } from "@/lib/types"
 
+
 interface ReceiptModalProps {
   receipt: DonationReceipt
   onClose: () => void

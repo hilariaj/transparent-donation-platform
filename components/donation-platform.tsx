@@ -2,10 +2,11 @@
 
 import { useState } from "react"
 import { CausesList } from "./causes-list"
-import { DonationModal } from "./donation-modal"
+
+import DonationModal from "./donation-modal";
+import PolkadotWallet from "./polkadot-wallet";
+
 import { ReceiptModal } from "./receipt-modal"
-import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownDisconnect } from "@coinbase/onchainkit/wallet"
-import { Avatar, Name, Identity, Address } from "@coinbase/onchainkit/identity"
 import { Input } from "./ui/input"
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs"
 import { Search, Heart } from "lucide-react"
@@ -35,19 +36,7 @@ export function DonationPlatform() {
                 <p className="text-sm text-muted-foreground">On-chain donations, verified impact</p>
               </div>
             </div>
-            <div className="[&_button[data-state='connected']]:bg-transparent [&_button[data-state='connected']]:border [&_button[data-state='connected']]:border-gray-200 [&_button[data-state='connected']]:text-blue-600 [&_button[data-state='connected']]:hover:bg-gray-50 [&_button]:bg-blue-600 [&_button]:hover:bg-blue-700 [&_button]:text-white [&_button]:font-medium [&_button]:px-6 [&_button]:py-2 [&_button]:rounded-lg [&_button]:transition-colors">
-              <Wallet>
-                <ConnectWallet />
-                <WalletDropdown>
-                  <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick>
-                    <Avatar />
-                    <Name />
-                    <Address />
-                  </Identity>
-                  <WalletDropdownDisconnect />
-                </WalletDropdown>
-              </Wallet>
-            </div>
+            <PolkadotWallet />
           </div>
         </div>
       </header>
@@ -93,13 +82,12 @@ export function DonationPlatform() {
       </main>
 
       {/* Donation Modal */}
-      {selectedCause && (
-        <DonationModal
-          cause={selectedCause}
-          onClose={() => setSelectedCause(null)}
-          onComplete={handleDonationComplete}
-        />
-      )}
+      <DonationModal
+        open={!!selectedCause}
+        onOpenChange={(open) => { if (!open) setSelectedCause(null); }}
+        cause={selectedCause}
+        onComplete={handleDonationComplete}
+      />
 
       {/* Receipt Modal */}
       {receipt && <ReceiptModal receipt={receipt} onClose={() => setReceipt(null)} />}

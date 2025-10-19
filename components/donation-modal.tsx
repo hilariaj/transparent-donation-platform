@@ -1,164 +1,113 @@
-"use client"
 
-import { useState } from "react"
-import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from "wagmi"
-import { parseEther } from "viem"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog"
-import { Button } from "./ui/button"
-import { Input } from "./ui/input"
-import { Label } from "./ui/label"
-import { Badge } from "./ui/badge"
-import { Separator } from "./ui/separator"
-import { Loader2 } from "lucide-react"
-import type { Cause, DonationReceipt } from "@/lib/types"
+"use client";
 
-interface DonationModalProps {
-  cause: Cause
-  onClose: () => void
-  onComplete: (receipt: DonationReceipt) => void
-}
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
+import { Button } from "./ui/button";
+import type { Cause, DonationReceipt } from "@/lib/types";
+import { usePolkadotWallet } from "../hooks/usePolkadotWallet";
 
-export function DonationModal({ cause, onClose, onComplete }: DonationModalProps) {
-  const [amount, setAmount] = useState("")
-  const [error, setError] = useState("")
+type Props = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  cause: Cause | null;
+  onComplete: (receipt: DonationReceipt) => void;
+};
 
-  const { address, isConnected } = useAccount()
-  const { data: hash, sendTransaction, isPending } = useSendTransaction()
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
-    hash,
-  })
+export default function DonationModal({ open, onOpenChange, cause, onComplete }: Props) {
+  const { selected, connect } = usePolkadotWallet();
+  const [amount, setAmount] = useState<string>("0.1");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   const handleDonate = async () => {
-    if (!isConnected) {
-      setError("Please connect your wallet first")
-      return
+    if (!selected) {
+      await connect();
+      return;
     }
-
-    if (!amount || Number.parseFloat(amount) <= 0) {
-      setError("Please enter a valid amount")
-      return
-    }
-
-    setError("")
+    if (!cause) return;
 
     try {
-      // Send real ETH transaction to the cause's wallet address
-      sendTransaction({
-        to: cause.walletAddress as `0x${string}`,
-        value: parseEther(amount),
-      })
-    } catch (err) {
-      setError("Transaction failed. Please try again.")
-    }
-  }
+      setLoading(true);
+      setErr(null);
 
-  if (isSuccess && hash) {
-    const receipt: DonationReceipt = {
-      transactionHash: hash,
-      blockNumber: Date.now(), // In production, get from transaction receipt
-      timestamp: new Date().toISOString(),
-      donor: address || "0x0",
-      recipient: cause.walletAddress,
-      amount: Number.parseFloat(amount),
-      causeName: cause.name,
-      organization: cause.organization,
-      category: cause.category,
-    }
-    onComplete(receipt)
-  }
+      // Here, we'll ship the extrinsic with @polkadot/api in the future.
+      // For now, we generate a mock receipt to unlock the build.
 
-  const isProcessing = isPending || isConfirming
+      const amountNum = Number(amount);
+      if (Number.isNaN(amountNum) || amountNum <= 0) {
+        setErr("Enter a valid value (DOT).");
+        setLoading(false);
+        return;
+      }
+     
+      const receipt: DonationReceipt = {
+        transactionHash: "0xMOCK_TX_HASH",
+        blockNumber: 0,
+        donor: selected.address,
+        recipient: cause.walletAddress,     
+        amount: amountNum,                   
+        causeName: cause.name,              
+        organization: cause.organization,
+        category: cause.category,
+        timestamp: new Date().toISOString(),
+      };
+
+      onComplete(receipt);
+      onOpenChange(false);
+    } catch (e: any) {
+      setErr(e?.message ?? "Failed to process donation.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>Donate to {cause.name}</DialogTitle>
-          <DialogDescription>{cause.organization}</DialogDescription>
+          <DialogTitle>Confirm donation</DialogTitle>
+          <DialogDescription>
+            {cause ? `You will donate to: ${cause.name}` : "Select a cause"}
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Cause Details */}
-          <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="capitalize">
-                {cause.category}
-              </Badge>
-              {cause.verified && (
-                <Badge variant="default" className="bg-green-600">
-                  ✓ Verified
-                </Badge>
-              )}
+        <div className="space-y-3">
+          <div className="text-sm">
+            <div>
+              <strong>Wallet:</strong> {selected ? selected.address : "not connected"}
             </div>
-            <p className="text-sm text-muted-foreground">{cause.aiSummary}</p>
+            {!selected && (
+              <Button onClick={connect} className="mt-2">
+                Connect Wallet
+              </Button>
+            )}
           </div>
 
-          <Separator />
-
-          {!isConnected && (
-            <div className="bg-yellow-50 dark:bg-yellow-950/20 rounded-lg p-3 text-sm text-yellow-800 dark:text-yellow-200">
-              Please connect your wallet to make a donation
-            </div>
-          )}
-
-          {/* Donation Amount */}
-          <div className="space-y-2">
-            <Label htmlFor="amount">Donation Amount (ETH)</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.001"
-              min="0"
-              placeholder="0.1"
+          <label className="block text-sm">
+            Value (DOT)
+            <input
+              type="text"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              disabled={isProcessing || !isConnected}
+              className="mt-1 w-full rounded-md border px-3 py-2"
+              inputMode="decimal"
+              placeholder="0.10"
             />
-            <div className="flex gap-2">
-              {["0.01", "0.05", "0.1", "0.5"].map((preset) => (
-                <Button
-                  key={preset}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setAmount(preset)}
-                  disabled={isProcessing || !isConnected}
-                >
-                  {preset} ETH
-                </Button>
-              ))}
-            </div>
-          </div>
+          </label>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
-
-          {/* Transaction Info */}
-          <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-3 space-y-1 text-sm">
-            <p className="font-medium">On-chain transparency:</p>
-            <ul className="text-muted-foreground space-y-1 text-xs">
-              <li>• Your donation will be recorded on the blockchain</li>
-              <li>• You'll receive a verifiable receipt with transaction hash</li>
-              <li>• Track your donation's impact in real-time</li>
-            </ul>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose} disabled={isProcessing} className="flex-1 bg-transparent">
-              Cancel
-            </Button>
-            <Button onClick={handleDonate} disabled={isProcessing || !amount || !isConnected} className="flex-1">
-              {isProcessing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isPending ? "Confirming..." : "Processing..."}
-                </>
-              ) : (
-                "Confirm Donation"
-              )}
-            </Button>
-          </div>
+          {err ? <p className="text-red-500 text-sm">{err}</p> : null}
         </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+            Cancelar
+          </Button>
+          <Button onClick={handleDonate} disabled={loading || !cause}>
+            {loading ? "Sending..." : "Donate"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
